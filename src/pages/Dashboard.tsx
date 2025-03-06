@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,11 @@ import { fetchUserItems, fetchItemStats, createItem, updateItem, deleteItem } fr
 import { Item, ItemStats } from "@/lib/types";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, PackageOpen, CheckCircle, XCircle, FileEdit, Clock, Trash2, User, ShoppingBag, Tag, MapPin, DollarSign } from "lucide-react";
+import { 
+  PlusCircle, PackageOpen, CheckCircle, XCircle, FileEdit, 
+  Clock, Trash2, User, ShoppingBag, Tag, MapPin, 
+  DollarSign, Phone, Mail 
+} from "lucide-react";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -275,7 +278,6 @@ export default function Dashboard() {
     }
   ];
 
-  // Prepare chart data
   const getCategoryChartData = () => {
     if (!itemStats) return [];
     return Object.entries(itemStats.byCategory).map(([name, value]) => ({
@@ -324,7 +326,6 @@ export default function Dashboard() {
             </Button>
           </div>
           
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card className="animate-scale-in">
               <CardContent className="p-6">
@@ -383,7 +384,6 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Value Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Card className="animate-scale-in [animation-delay:400ms]">
               <CardContent className="p-6">
@@ -414,7 +414,6 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <ChartCard title="Items by Status" description="Distribution of listings by status" className="animate-blur-in">
               <StatsPieChart data={getStatusChartData()} />
@@ -425,7 +424,6 @@ export default function Dashboard() {
             </ChartCard>
           </div>
           
-          {/* Item Listings */}
           <div className="bg-white rounded-lg shadow-sm p-6 animate-scale-in">
             <h2 className="text-xl font-bold mb-4">Your Listed Items</h2>
             
@@ -548,7 +546,6 @@ export default function Dashboard() {
         </div>
       </main>
       
-      {/* Item Form Dialog */}
       <ItemForm
         open={isItemFormOpen}
         setOpen={setIsItemFormOpen}
@@ -556,7 +553,6 @@ export default function Dashboard() {
         onSave={editingItem ? handleUpdateItem : handleCreateItem}
       />
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

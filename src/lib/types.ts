@@ -30,3 +30,18 @@ export interface ItemStats {
   totalValue: number;
   soldValue: number;
 }
+
+export interface Job {
+  id?: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  description: string;
+  requirements: string[];
+  type: string;
+  category: string;
+  status: 'active' | 'closed' | 'draft';
+  postedBy: string;
+  postedDate?: string;
+}

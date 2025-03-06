@@ -25,7 +25,7 @@ export function ItemForm({ open, setOpen, item, onSave }: ItemFormProps) {
   const [imageUrl, setImageUrl] = useState(item?.image_url || "");
   const [contactPhone, setContactPhone] = useState(item?.contact_phone || "");
   const [contactEmail, setContactEmail] = useState(item?.contact_email || "");
-  const [status, setStatus] = useState(item?.status || "active");
+  const [status, setStatus] = useState<"active" | "sold" | "draft">(item?.status || "active");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +56,7 @@ export function ItemForm({ open, setOpen, item, onSave }: ItemFormProps) {
         image_url: imageUrl,
         contact_phone: contactPhone,
         contact_email: contactEmail,
-        status: status as "active" | "sold" | "draft",
+        status: status,
       });
       
       setOpen(false);
@@ -186,7 +186,7 @@ export function ItemForm({ open, setOpen, item, onSave }: ItemFormProps) {
                 </Label>
                 <Select 
                   value={status} 
-                  onValueChange={setStatus}
+                  onValueChange={(value: "active" | "sold" | "draft") => setStatus(value)}
                   required
                 >
                   <SelectTrigger id="status">

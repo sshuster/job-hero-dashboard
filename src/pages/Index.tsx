@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,10 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchAllItems } from "@/lib/api";
 import { Item } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingBag, ArrowRight, DollarSign } from "lucide-react";
+import { 
+  Search, ShoppingBag, ArrowRight, DollarSign, 
+  MapPin, Tag, User, Phone, Mail 
+} from "lucide-react";
 
 export default function Index() {
   const { isAuthenticated } = useAuth();
