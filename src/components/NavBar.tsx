@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { Menu, X, LogOut, User, ShoppingBag } from "lucide-react";
+import { Menu, X, LogOut, User, BarChart } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,8 @@ export function NavBar() {
 
   const navLinks = [
     { name: "Home", href: "/" },
+    { name: "Items Marketplace", href: "/items" },
+    { name: "Campaign Dashboard", href: "/campaigns", auth: true },
     { name: "Dashboard", href: "/dashboard", auth: true },
   ];
 
@@ -70,8 +72,8 @@ export function NavBar() {
             to="/"
             className="text-xl font-bold transition-colors hover:text-primary flex items-center"
           >
-            <ShoppingBag className="h-6 w-6 mr-2" />
-            SellByOwner
+            <BarChart className="h-6 w-6 mr-2" />
+            LeadGen Pro
           </Link>
 
           {/* Desktop Navigation */}
