@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
 # Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobhero.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sellbyowner.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')  # Change in production
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
@@ -28,7 +28,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), default='user')
-    jobs = db.relationship('Job', backref='author', lazy=True)
+    items = db.relationship('Item', backref='owner', lazy=True)
 
     def to_dict(self):
         return {
@@ -38,34 +38,34 @@ class User(db.Model):
             'role': self.role
         }
 
-class Job(db.Model):
+class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    company = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    salary = db.Column(db.String(100))
     description = db.Column(db.Text, nullable=False)
-    requirements = db.Column(db.Text, nullable=False)  # Stored as JSON string
-    type = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    location = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50), nullable=False)
-    postedBy = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    postedDate = db.Column(db.String(10), nullable=False)
+    image_url = db.Column(db.String(200))
+    contact_phone = db.Column(db.String(20))
+    contact_email = db.Column(db.String(100))
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posted_date = db.Column(db.String(10), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='active')
 
     def to_dict(self):
-        import json
         return {
             'id': str(self.id),
             'title': self.title,
-            'company': self.company,
-            'location': self.location,
-            'salary': self.salary,
             'description': self.description,
-            'requirements': json.loads(self.requirements),
-            'type': self.type,
+            'price': self.price,
+            'location': self.location,
             'category': self.category,
-            'postedBy': str(self.postedBy),
-            'postedDate': self.postedDate,
+            'image_url': self.image_url,
+            'contact_phone': self.contact_phone,
+            'contact_email': self.contact_email,
+            'owner_id': str(self.owner_id),
+            'owner_name': self.owner.name,
+            'posted_date': self.posted_date,
             'status': self.status
         }
 
@@ -142,144 +142,141 @@ def get_current_user():
         'user': user.to_dict()
     }), 200
 
-# Job routes
-@app.route('/api/jobs', methods=['GET'])
-def get_all_jobs():
-    jobs = Job.query.all()
+# Item routes
+@app.route('/api/items', methods=['GET'])
+def get_all_items():
+    items = Item.query.filter_by(status='active').all()
     return jsonify({
-        'jobs': [job.to_dict() for job in jobs]
+        'items': [item.to_dict() for item in items]
     }), 200
 
-@app.route('/api/jobs/user/<user_id>', methods=['GET'])
-def get_user_jobs(user_id):
-    jobs = Job.query.filter_by(postedBy=user_id).all()
+@app.route('/api/items/user/<user_id>', methods=['GET'])
+def get_user_items(user_id):
+    items = Item.query.filter_by(owner_id=user_id).all()
     return jsonify({
-        'jobs': [job.to_dict() for job in jobs]
+        'items': [item.to_dict() for item in items]
     }), 200
 
-@app.route('/api/jobs/stats/<user_id>', methods=['GET'])
-def get_job_stats(user_id):
-    user_jobs = Job.query.filter_by(postedBy=user_id).all()
+@app.route('/api/items/stats/<user_id>', methods=['GET'])
+def get_item_stats(user_id):
+    user_items = Item.query.filter_by(owner_id=user_id).all()
     
     # Count by status
-    active = sum(1 for job in user_jobs if job.status == 'active')
-    closed = sum(1 for job in user_jobs if job.status == 'closed')
-    draft = sum(1 for job in user_jobs if job.status == 'draft')
+    active = sum(1 for item in user_items if item.status == 'active')
+    sold = sum(1 for item in user_items if item.status == 'sold')
+    draft = sum(1 for item in user_items if item.status == 'draft')
     
     # Count by category
     by_category = {}
-    for job in user_jobs:
-        by_category[job.category] = by_category.get(job.category, 0) + 1
+    for item in user_items:
+        by_category[item.category] = by_category.get(item.category, 0) + 1
     
-    # Count by type
-    by_type = {}
-    for job in user_jobs:
-        by_type[job.type] = by_type.get(job.type, 0) + 1
+    # Calculate total value
+    total_value = sum(item.price for item in user_items if item.status == 'active')
+    sold_value = sum(item.price for item in user_items if item.status == 'sold')
     
     return jsonify({
         'stats': {
             'active': active,
-            'closed': closed,
+            'sold': sold,
             'draft': draft,
             'byCategory': by_category,
-            'byType': by_type
+            'totalValue': total_value,
+            'soldValue': sold_value
         }
     }), 200
 
-@app.route('/api/jobs', methods=['POST'])
+@app.route('/api/items', methods=['POST'])
 @jwt_required()
-def create_job():
+def create_item():
     user_id = get_jwt_identity()
     data = request.get_json()
     
-    import json
     today = datetime.now().strftime('%Y-%m-%d')
     
-    new_job = Job(
+    new_item = Item(
         title=data['title'],
-        company=data['company'],
-        location=data['location'],
-        salary=data.get('salary', ''),
         description=data['description'],
-        requirements=json.dumps(data['requirements']),
-        type=data['type'],
+        price=data['price'],
+        location=data['location'],
         category=data['category'],
-        postedBy=user_id,
-        postedDate=today,
+        image_url=data.get('image_url', ''),
+        contact_phone=data.get('contact_phone', ''),
+        contact_email=data.get('contact_email', ''),
+        owner_id=user_id,
+        posted_date=today,
         status=data['status']
     )
     
-    db.session.add(new_job)
+    db.session.add(new_item)
     db.session.commit()
     
     return jsonify({
-        'message': 'Job created successfully',
-        'job': new_job.to_dict()
+        'message': 'Item created successfully',
+        'item': new_item.to_dict()
     }), 201
 
-@app.route('/api/jobs/<job_id>', methods=['PUT'])
+@app.route('/api/items/<item_id>', methods=['PUT'])
 @jwt_required()
-def update_job(job_id):
+def update_item(item_id):
     user_id = get_jwt_identity()
-    job = Job.query.get(job_id)
+    item = Item.query.get(item_id)
     
-    if not job:
-        return jsonify({'message': 'Job not found'}), 404
+    if not item:
+        return jsonify({'message': 'Item not found'}), 404
         
-    # Ensure user owns the job or is admin
+    # Ensure user owns the item or is admin
     user = User.query.get(user_id)
-    if str(job.postedBy) != str(user_id) and user.role != 'admin':
+    if str(item.owner_id) != str(user_id) and user.role != 'admin':
         return jsonify({'message': 'Unauthorized'}), 403
         
     data = request.get_json()
     
-    import json
-    
     if 'title' in data:
-        job.title = data['title']
-    if 'company' in data:
-        job.company = data['company']
-    if 'location' in data:
-        job.location = data['location']
-    if 'salary' in data:
-        job.salary = data['salary']
+        item.title = data['title']
     if 'description' in data:
-        job.description = data['description']
-    if 'requirements' in data:
-        job.requirements = json.dumps(data['requirements'])
-    if 'type' in data:
-        job.type = data['type']
+        item.description = data['description']
+    if 'price' in data:
+        item.price = data['price']
+    if 'location' in data:
+        item.location = data['location']
     if 'category' in data:
-        job.category = data['category']
+        item.category = data['category']
+    if 'image_url' in data:
+        item.image_url = data['image_url']
+    if 'contact_phone' in data:
+        item.contact_phone = data['contact_phone']
+    if 'contact_email' in data:
+        item.contact_email = data['contact_email']
     if 'status' in data:
-        job.status = data['status']
+        item.status = data['status']
     
     db.session.commit()
     
     return jsonify({
-        'message': 'Job updated successfully',
-        'job': job.to_dict()
+        'message': 'Item updated successfully',
+        'item': item.to_dict()
     }), 200
 
-@app.route('/api/jobs/<job_id>', methods=['DELETE'])
+@app.route('/api/items/<item_id>', methods=['DELETE'])
 @jwt_required()
-def delete_job(job_id):
+def delete_item(item_id):
     user_id = get_jwt_identity()
-    job = Job.query.get(job_id)
+    item = Item.query.get(item_id)
     
-    if not job:
-        return jsonify({'message': 'Job not found'}), 404
+    if not item:
+        return jsonify({'message': 'Item not found'}), 404
         
-    # Ensure user owns the job or is admin
+    # Ensure user owns the item or is admin
     user = User.query.get(user_id)
-    if str(job.postedBy) != str(user_id) and user.role != 'admin':
+    if str(item.owner_id) != str(user_id) and user.role != 'admin':
         return jsonify({'message': 'Unauthorized'}), 403
         
-    db.session.delete(job)
+    db.session.delete(item)
     db.session.commit()
     
     return jsonify({
-        'message': 'Job deleted successfully'
+        'message': 'Item deleted successfully'
     }), 200
 
 # Initialize the database

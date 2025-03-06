@@ -6,25 +6,27 @@ export interface User {
   role?: string;
 }
 
-export interface Job {
+export interface Item {
   id: string;
   title: string;
-  company: string;
-  location: string;
-  salary?: string;
   description: string;
-  requirements: string[];
-  type: string; // Full-time, Part-time, Contract, etc.
+  price: number;
+  location: string;
   category: string;
-  postedBy: string; // User ID
-  postedDate: string;
-  status: 'active' | 'closed' | 'draft';
+  image_url?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  owner_id: string;
+  owner_name?: string;
+  posted_date: string;
+  status: 'active' | 'sold' | 'draft';
 }
 
-export interface JobStats {
+export interface ItemStats {
   active: number;
-  closed: number;
+  sold: number;
   draft: number;
   byCategory: Record<string, number>;
-  byType: Record<string, number>;
+  totalValue: number;
+  soldValue: number;
 }

@@ -1,157 +1,158 @@
 
-from app import app, db, User, Job
+from app import db, User, Item
 from werkzeug.security import generate_password_hash
-import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
-# Mock jobs data that matches the frontend
-mock_jobs = [
-    {
-        'title': 'Frontend Developer',
-        'company': 'Tech Solutions Inc.',
-        'location': 'San Francisco, CA',
-        'salary': '$120,000 - $150,000',
-        'description': 'We are looking for an experienced Frontend Developer to join our team. The ideal candidate should have experience with React, TypeScript, and modern CSS frameworks.',
-        'requirements': [
-            'At least 3 years of experience with React',
-            'Strong TypeScript skills',
-            'Experience with CSS frameworks like Tailwind',
-            'Knowledge of state management solutions',
-            'Good communication skills'
-        ],
-        'type': 'Full-time',
-        'category': 'Development',
-        'status': 'active'
-    },
-    {
-        'title': 'Backend Engineer',
-        'company': 'Data Systems Corp',
-        'location': 'Remote',
-        'salary': '$130,000 - $160,000',
-        'description': 'Join our backend team to build scalable and efficient APIs and services. Work with modern technologies in a collaborative environment.',
-        'requirements': [
-            'Strong Node.js experience',
-            'Knowledge of SQL and NoSQL databases',
-            'Experience with RESTful API design',
-            'Understanding of microservices architecture',
-            'Good problem-solving skills'
-        ],
-        'type': 'Full-time',
-        'category': 'Development',
-        'status': 'active'
-    },
-    {
-        'title': 'UI/UX Designer',
-        'company': 'Creative Designs LLC',
-        'location': 'New York, NY',
-        'salary': '$100,000 - $120,000',
-        'description': 'We are seeking a talented UI/UX Designer to create amazing user experiences. The ideal candidate should have a portfolio of design projects and experience with design tools.',
-        'requirements': [
-            'Experience with Figma and Adobe Creative Suite',
-            'Understanding of user-centered design principles',
-            'Knowledge of responsive design',
-            'Ability to conduct user research',
-            'Good communication skills'
-        ],
-        'type': 'Full-time',
-        'category': 'Design',
-        'status': 'active'
-    },
-    {
-        'title': 'DevOps Engineer',
-        'company': 'Cloud Services Inc.',
-        'location': 'Seattle, WA',
-        'salary': '$140,000 - $170,000',
-        'description': 'Join our DevOps team to build and maintain our cloud infrastructure. Experience with AWS and CI/CD pipelines is required.',
-        'requirements': [
-            'Experience with AWS services',
-            'Knowledge of Docker and Kubernetes',
-            'Experience with CI/CD tools like Jenkins or GitHub Actions',
-            'Understanding of infrastructure as code',
-            'Good problem-solving skills'
-        ],
-        'type': 'Full-time',
-        'category': 'DevOps',
-        'status': 'active'
-    },
-    {
-        'title': 'Product Manager',
-        'company': 'Innovative Products Inc.',
-        'location': 'Austin, TX',
-        'salary': '$130,000 - $160,000',
-        'description': 'We are looking for a Product Manager to lead our product development process. The ideal candidate should have experience with agile methodologies and a technical background.',
-        'requirements': [
-            'Experience with agile methodologies',
-            'Technical background or understanding',
-            'Good communication skills',
-            'Ability to work with cross-functional teams',
-            'Strategic thinking'
-        ],
-        'type': 'Full-time',
-        'category': 'Management',
-        'status': 'closed'
-    },
-    {
-        'title': 'Data Scientist',
-        'company': 'Analytics Corp',
-        'location': 'Boston, MA',
-        'salary': '$120,000 - $150,000',
-        'description': 'Join our data science team to analyze and interpret complex data. Experience with machine learning and statistical analysis is required.',
-        'requirements': [
-            'Strong Python skills',
-            'Experience with machine learning frameworks',
-            'Knowledge of statistical analysis',
-            'Understanding of data visualization',
-            'Good problem-solving skills'
-        ],
-        'type': 'Contract',
-        'category': 'Data Science',
-        'status': 'draft'
-    }
-]
+# Sample categories
+categories = ['Electronics', 'Furniture', 'Vehicles', 'Clothing', 'Real Estate', 'Services', 'Collectibles', 'Other']
 
-def init_db():
-    with app.app_context():
-        # Create all tables
-        db.create_all()
-        
-        # Check if admin user exists, if not create one
-        admin = User.query.filter_by(email='admin@example.com').first()
-        if not admin:
-            admin_user = User(
-                name='Administrator',
-                email='admin@example.com',
-                password=generate_password_hash('admin'),
-                role='admin'
+# Sample locations
+locations = ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ', 'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA']
+
+# Sample statuses
+statuses = ['active', 'sold', 'draft']
+status_weights = [0.7, 0.2, 0.1]  # 70% active, 20% sold, 10% draft
+
+def create_mock_data():
+    with db.app.app_context():
+        # Clear existing data
+        db.session.query(Item).delete()
+        db.session.query(User).delete()
+        db.session.commit()
+
+        print("Creating mock users...")
+        # Create admin user
+        admin = User(
+            name='Administrator',
+            email='admin@example.com',
+            password=generate_password_hash('admin'),
+            role='admin'
+        )
+        db.session.add(admin)
+
+        # Create regular users
+        users = []
+        for i in range(1, 6):
+            user = User(
+                name=f'User {i}',
+                email=f'user{i}@example.com',
+                password=generate_password_hash(f'password{i}'),
+                role='user'
             )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Admin user created")
-            
-            # Add mock jobs for admin
-            admin_id = admin_user.id
-            today = datetime.now().strftime('%Y-%m-%d')
-            
-            for job_data in mock_jobs:
-                new_job = Job(
-                    title=job_data['title'],
-                    company=job_data['company'],
-                    location=job_data['location'],
-                    salary=job_data.get('salary', ''),
-                    description=job_data['description'],
-                    requirements=json.dumps(job_data['requirements']),
-                    type=job_data['type'],
-                    category=job_data['category'],
-                    postedBy=admin_id,
-                    postedDate=today,
-                    status=job_data['status']
+            users.append(user)
+            db.session.add(user)
+        
+        db.session.commit()
+        print(f"Created {len(users) + 1} users")
+
+        # Create items for each user
+        print("Creating mock items...")
+        items_count = 0
+        
+        # Items for admin
+        admin_items = [
+            {
+                'title': 'iPhone 13 Pro - Like New',
+                'description': 'Selling my iPhone 13 Pro, only used for 3 months. Comes with original box and accessories.',
+                'price': 899.99,
+                'category': 'Electronics',
+                'location': 'New York, NY',
+                'image_url': 'https://example.com/iphone.jpg',
+                'contact_phone': '555-123-4567',
+                'contact_email': 'admin@example.com',
+                'status': 'active'
+            },
+            {
+                'title': 'Leather Sofa - Excellent Condition',
+                'description': 'Beautiful brown leather sofa, 3 years old but in excellent condition. No scratches or tears.',
+                'price': 650.00,
+                'category': 'Furniture',
+                'location': 'Los Angeles, CA',
+                'image_url': 'https://example.com/sofa.jpg',
+                'contact_phone': '555-123-4567',
+                'contact_email': 'admin@example.com',
+                'status': 'active'
+            },
+            {
+                'title': '2018 Honda Civic - Low Mileage',
+                'description': '2018 Honda Civic with only 25,000 miles. One owner, regular maintenance, all service records available.',
+                'price': 18500.00,
+                'category': 'Vehicles',
+                'location': 'Chicago, IL',
+                'image_url': 'https://example.com/civic.jpg',
+                'contact_phone': '555-123-4567',
+                'contact_email': 'admin@example.com',
+                'status': 'sold'
+            },
+            {
+                'title': 'Vintage Record Collection',
+                'description': 'Collection of 200+ vinyl records from the 60s and 70s, including rare first pressings.',
+                'price': 1200.00,
+                'category': 'Collectibles',
+                'location': 'San Francisco, CA',
+                'image_url': 'https://example.com/records.jpg',
+                'contact_phone': '555-123-4567',
+                'contact_email': 'admin@example.com',
+                'status': 'draft'
+            }
+        ]
+        
+        for item_data in admin_items:
+            item = Item(
+                title=item_data['title'],
+                description=item_data['description'],
+                price=item_data['price'],
+                location=item_data['location'],
+                category=item_data['category'],
+                image_url=item_data['image_url'],
+                contact_phone=item_data['contact_phone'],
+                contact_email=item_data['contact_email'],
+                owner_id=admin.id,
+                posted_date=(datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d'),
+                status=item_data['status']
+            )
+            db.session.add(item)
+            items_count += 1
+
+        # Create random items for each regular user
+        for user in users:
+            # Each user gets 3-7 items
+            num_items = random.randint(3, 7)
+            for _ in range(num_items):
+                # Generate random posting date within the last 60 days
+                posted_date = (datetime.now() - timedelta(days=random.randint(1, 60))).strftime('%Y-%m-%d')
+                
+                # Random item data
+                title_prefixes = ["New", "Used", "Like New", "Vintage", "Rare", "Custom"]
+                title_items = ["Table", "Laptop", "Camera", "Bicycle", "Jacket", "Guitar", "Watch", "Book Collection", "Shoes", "Painting"]
+                title = f"{random.choice(title_prefixes)} {random.choice(title_items)}"
+                
+                price = round(random.uniform(10, 2000), 2)
+                category = random.choice(categories)
+                location = random.choice(locations)
+                status = random.choices(statuses, weights=status_weights)[0]
+                
+                item = Item(
+                    title=title,
+                    description=f"This is a detailed description for {title.lower()}. The item is in good condition and ready for a new owner.",
+                    price=price,
+                    location=location,
+                    category=category,
+                    image_url=f"https://example.com/image{random.randint(1, 100)}.jpg",
+                    contact_phone=f"555-{random.randint(100, 999)}-{random.randint(1000, 9999)}",
+                    contact_email=user.email,
+                    owner_id=user.id,
+                    posted_date=posted_date,
+                    status=status
                 )
-                db.session.add(new_job)
-            
-            db.session.commit()
-            print("Mock jobs added")
-        else:
-            print("Admin user already exists")
+                
+                db.session.add(item)
+                items_count += 1
+        
+        db.session.commit()
+        print(f"Created {items_count} items")
+        print("Mock data creation completed successfully!")
 
 if __name__ == '__main__':
-    init_db()
+    create_mock_data()

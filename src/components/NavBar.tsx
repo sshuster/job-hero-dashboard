@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, ShoppingBag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,9 +68,10 @@ export function NavBar() {
         <div className="flex items-center gap-6">
           <Link
             to="/"
-            className="text-xl font-bold transition-colors hover:text-primary"
+            className="text-xl font-bold transition-colors hover:text-primary flex items-center"
           >
-            JobHero
+            <ShoppingBag className="h-6 w-6 mr-2" />
+            SellByOwner
           </Link>
 
           {/* Desktop Navigation */}

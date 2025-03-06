@@ -1,5 +1,5 @@
 
-import { Job, User, JobStats } from './types';
+import { Item, User, ItemStats } from './types';
 
 // Mock admin user
 export const mockAdminUser: User = {
@@ -9,156 +9,100 @@ export const mockAdminUser: User = {
   role: 'admin'
 };
 
-// Mock job postings for admin
-export const mockJobs: Job[] = [
+// Mock items for admin
+export const mockItems: Item[] = [
   {
     id: '1',
-    title: 'Frontend Developer',
-    company: 'Tech Solutions Inc.',
-    location: 'San Francisco, CA',
-    salary: '$120,000 - $150,000',
-    description: 'We are looking for an experienced Frontend Developer to join our team. The ideal candidate should have experience with React, TypeScript, and modern CSS frameworks.',
-    requirements: [
-      'At least 3 years of experience with React',
-      'Strong TypeScript skills',
-      'Experience with CSS frameworks like Tailwind',
-      'Knowledge of state management solutions',
-      'Good communication skills'
-    ],
-    type: 'Full-time',
-    category: 'Development',
-    postedBy: 'admin',
-    postedDate: '2023-10-15',
+    title: 'iPhone 13 Pro - Like New',
+    description: 'Selling my iPhone 13 Pro, only used for 3 months. Comes with original box and accessories.',
+    price: 899.99,
+    location: 'New York, NY',
+    category: 'Electronics',
+    image_url: 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?q=80&w=1000',
+    contact_phone: '555-123-4567',
+    contact_email: 'admin@example.com',
+    owner_id: 'admin',
+    owner_name: 'Administrator',
+    posted_date: '2023-10-15',
     status: 'active'
   },
   {
     id: '2',
-    title: 'Backend Engineer',
-    company: 'Data Systems Corp',
-    location: 'Remote',
-    salary: '$130,000 - $160,000',
-    description: 'Join our backend team to build scalable and efficient APIs and services. Work with modern technologies in a collaborative environment.',
-    requirements: [
-      'Strong Node.js experience',
-      'Knowledge of SQL and NoSQL databases',
-      'Experience with RESTful API design',
-      'Understanding of microservices architecture',
-      'Good problem-solving skills'
-    ],
-    type: 'Full-time',
-    category: 'Development',
-    postedBy: 'admin',
-    postedDate: '2023-10-12',
+    title: 'Leather Sofa - Excellent Condition',
+    description: 'Beautiful brown leather sofa, 3 years old but in excellent condition. No scratches or tears.',
+    price: 650.00,
+    location: 'Los Angeles, CA',
+    category: 'Furniture',
+    image_url: 'https://images.unsplash.com/photo-1540574163026-643ea20ade25',
+    contact_phone: '555-123-4567',
+    contact_email: 'admin@example.com',
+    owner_id: 'admin',
+    owner_name: 'Administrator',
+    posted_date: '2023-10-12',
     status: 'active'
   },
   {
     id: '3',
-    title: 'UI/UX Designer',
-    company: 'Creative Designs LLC',
-    location: 'New York, NY',
-    salary: '$100,000 - $120,000',
-    description: 'We are seeking a talented UI/UX Designer to create amazing user experiences. The ideal candidate should have a portfolio of design projects and experience with design tools.',
-    requirements: [
-      'Experience with Figma and Adobe Creative Suite',
-      'Understanding of user-centered design principles',
-      'Knowledge of responsive design',
-      'Ability to conduct user research',
-      'Good communication skills'
-    ],
-    type: 'Full-time',
-    category: 'Design',
-    postedBy: 'admin',
-    postedDate: '2023-10-10',
-    status: 'active'
+    title: '2018 Honda Civic - Low Mileage',
+    description: '2018 Honda Civic with only 25,000 miles. One owner, regular maintenance, all service records available.',
+    price: 18500.00,
+    location: 'Chicago, IL',
+    category: 'Vehicles',
+    image_url: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf',
+    contact_phone: '555-123-4567',
+    contact_email: 'admin@example.com',
+    owner_id: 'admin',
+    owner_name: 'Administrator',
+    posted_date: '2023-10-10',
+    status: 'sold'
   },
   {
     id: '4',
-    title: 'DevOps Engineer',
-    company: 'Cloud Services Inc.',
-    location: 'Seattle, WA',
-    salary: '$140,000 - $170,000',
-    description: 'Join our DevOps team to build and maintain our cloud infrastructure. Experience with AWS and CI/CD pipelines is required.',
-    requirements: [
-      'Experience with AWS services',
-      'Knowledge of Docker and Kubernetes',
-      'Experience with CI/CD tools like Jenkins or GitHub Actions',
-      'Understanding of infrastructure as code',
-      'Good problem-solving skills'
-    ],
-    type: 'Full-time',
-    category: 'DevOps',
-    postedBy: 'admin',
-    postedDate: '2023-10-08',
-    status: 'active'
-  },
-  {
-    id: '5',
-    title: 'Product Manager',
-    company: 'Innovative Products Inc.',
-    location: 'Austin, TX',
-    salary: '$130,000 - $160,000',
-    description: 'We are looking for a Product Manager to lead our product development process. The ideal candidate should have experience with agile methodologies and a technical background.',
-    requirements: [
-      'Experience with agile methodologies',
-      'Technical background or understanding',
-      'Good communication skills',
-      'Ability to work with cross-functional teams',
-      'Strategic thinking'
-    ],
-    type: 'Full-time',
-    category: 'Management',
-    postedBy: 'admin',
-    postedDate: '2023-10-05',
-    status: 'closed'
-  },
-  {
-    id: '6',
-    title: 'Data Scientist',
-    company: 'Analytics Corp',
-    location: 'Boston, MA',
-    salary: '$120,000 - $150,000',
-    description: 'Join our data science team to analyze and interpret complex data. Experience with machine learning and statistical analysis is required.',
-    requirements: [
-      'Strong Python skills',
-      'Experience with machine learning frameworks',
-      'Knowledge of statistical analysis',
-      'Understanding of data visualization',
-      'Good problem-solving skills'
-    ],
-    type: 'Contract',
-    category: 'Data Science',
-    postedBy: 'admin',
-    postedDate: '2023-10-03',
+    title: 'Vintage Record Collection',
+    description: 'Collection of 200+ vinyl records from the 60s and 70s, including rare first pressings.',
+    price: 1200.00,
+    location: 'San Francisco, CA',
+    category: 'Collectibles',
+    image_url: 'https://images.unsplash.com/photo-1619063408105-652246c75563',
+    contact_phone: '555-123-4567',
+    contact_email: 'admin@example.com',
+    owner_id: 'admin',
+    owner_name: 'Administrator',
+    posted_date: '2023-10-08',
     status: 'draft'
   }
 ];
 
-// Calculate job stats for the mock data
-export const calculateJobStats = (jobs: Job[]): JobStats => {
-  const active = jobs.filter(job => job.status === 'active').length;
-  const closed = jobs.filter(job => job.status === 'closed').length;
-  const draft = jobs.filter(job => job.status === 'draft').length;
+// Calculate item stats for the mock data
+export const calculateItemStats = (items: Item[]): ItemStats => {
+  const active = items.filter(item => item.status === 'active').length;
+  const sold = items.filter(item => item.status === 'sold').length;
+  const draft = items.filter(item => item.status === 'draft').length;
   
   // Count by category
   const byCategory: Record<string, number> = {};
-  jobs.forEach(job => {
-    byCategory[job.category] = (byCategory[job.category] || 0) + 1;
+  items.forEach(item => {
+    byCategory[item.category] = (byCategory[item.category] || 0) + 1;
   });
   
-  // Count by type
-  const byType: Record<string, number> = {};
-  jobs.forEach(job => {
-    byType[job.type] = (byType[job.type] || 0) + 1;
-  });
+  // Calculate total value
+  const totalValue = items
+    .filter(item => item.status === 'active')
+    .reduce((sum, item) => sum + item.price, 0);
+    
+  const soldValue = items
+    .filter(item => item.status === 'sold')
+    .reduce((sum, item) => sum + item.price, 0);
   
   return {
     active,
-    closed,
+    sold,
     draft,
     byCategory,
-    byType
+    totalValue,
+    soldValue
   };
 };
 
-// Generate mock job statistics for the dashboard
-export const mockJobStats: JobStats = calculateJobStats(mockJobs);
+// Generate mock item statistics for the dashboard
+export const mockItemStats: ItemStats = calculateItemStats(mockItems);

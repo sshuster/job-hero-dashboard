@@ -1,6 +1,6 @@
 
-import { User, Job, JobStats } from './types';
-import { mockJobs, mockJobStats } from './mockData';
+import { User, Item, ItemStats } from './types';
+import { mockItems, mockItemStats } from './mockData';
 
 // Base URL for API requests
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -37,6 +37,18 @@ const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
 // Authentication APIs
 export const loginApi = async (email: string, password: string): Promise<User | null> => {
   try {
+    // Check for mock admin user
+    if (email === 'admin@example.com' && password === 'admin') {
+      const mockAdminUser: User = {
+        id: 'admin',
+        name: 'Administrator',
+        email: 'admin@example.com',
+        role: 'admin'
+      };
+      localStorage.setItem('mockUser', JSON.stringify(mockAdminUser));
+      return Promise.resolve(mockAdminUser);
+    }
+
     const data = await fetchApi('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -63,6 +75,12 @@ export const registerApi = async (name: string, email: string, password: string)
 
 export const logoutApi = async (): Promise<void> => {
   try {
+    // Clear mock user if it exists
+    if (localStorage.getItem('mockUser')) {
+      localStorage.removeItem('mockUser');
+      return;
+    }
+    
     await fetchApi('/auth/logout', {
       method: 'POST',
     });
@@ -74,6 +92,12 @@ export const logoutApi = async (): Promise<void> => {
 
 export const fetchCurrentUser = async (): Promise<User | null> => {
   try {
+    // First try to get user from localStorage (for mock admin)
+    const storedUser = localStorage.getItem('mockUser');
+    if (storedUser) {
+      return JSON.parse(storedUser);
+    }
+
     const data = await fetchApi('/auth/me');
     return data.user;
   } catch (error) {
@@ -82,116 +106,117 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
   }
 };
 
-// Job APIs
-export const fetchAllJobs = async (): Promise<Job[]> => {
+// Item APIs
+export const fetchAllItems = async (): Promise<Item[]> => {
   // Return mock data if using mock user
   if (isMockUser()) {
-    return Promise.resolve([...mockJobs]);
+    return Promise.resolve([...mockItems]);
   }
 
   try {
-    const data = await fetchApi('/jobs');
-    return data.jobs;
+    const data = await fetchApi('/items');
+    return data.items;
   } catch (error) {
-    console.error('Failed to fetch jobs:', error);
+    console.error('Failed to fetch items:', error);
     throw error;
   }
 };
 
-export const fetchUserJobs = async (userId: string): Promise<Job[]> => {
+export const fetchUserItems = async (userId: string): Promise<Item[]> => {
   // Return mock data if using mock user
   if (isMockUser()) {
-    return Promise.resolve(mockJobs.filter(job => job.postedBy === userId));
+    return Promise.resolve(mockItems.filter(item => item.owner_id === userId));
   }
 
   try {
-    const data = await fetchApi(`/jobs/user/${userId}`);
-    return data.jobs;
+    const data = await fetchApi(`/items/user/${userId}`);
+    return data.items;
   } catch (error) {
-    console.error('Failed to fetch user jobs:', error);
+    console.error('Failed to fetch user items:', error);
     throw error;
   }
 };
 
-export const fetchJobStats = async (userId: string): Promise<JobStats> => {
+export const fetchItemStats = async (userId: string): Promise<ItemStats> => {
   // Return mock data if using mock user
   if (isMockUser()) {
-    return Promise.resolve({...mockJobStats});
+    return Promise.resolve({...mockItemStats});
   }
 
   try {
-    const data = await fetchApi(`/jobs/stats/${userId}`);
+    const data = await fetchApi(`/items/stats/${userId}`);
     return data.stats;
   } catch (error) {
-    console.error('Failed to fetch job stats:', error);
+    console.error('Failed to fetch item stats:', error);
     throw error;
   }
 };
 
-export const createJob = async (job: Omit<Job, 'id' | 'postedDate'>): Promise<Job> => {
+export const createItem = async (item: Omit<Item, 'id' | 'posted_date' | 'owner_name'>): Promise<Item> => {
   // Handle mock data
   if (isMockUser()) {
-    const newJob: Job = {
-      ...job,
+    const newItem: Item = {
+      ...item,
       id: `mock-${Date.now()}`,
-      postedDate: new Date().toISOString().split('T')[0]
+      posted_date: new Date().toISOString().split('T')[0],
+      owner_name: 'Administrator'
     };
-    mockJobs.push(newJob);
-    return Promise.resolve(newJob);
+    mockItems.push(newItem);
+    return Promise.resolve(newItem);
   }
 
   try {
-    const data = await fetchApi('/jobs', {
+    const data = await fetchApi('/items', {
       method: 'POST',
-      body: JSON.stringify(job),
+      body: JSON.stringify(item),
     });
-    return data.job;
+    return data.item;
   } catch (error) {
-    console.error('Failed to create job:', error);
+    console.error('Failed to create item:', error);
     throw error;
   }
 };
 
-export const updateJob = async (id: string, job: Partial<Job>): Promise<Job> => {
+export const updateItem = async (id: string, item: Partial<Item>): Promise<Item> => {
   // Handle mock data
   if (isMockUser()) {
-    const index = mockJobs.findIndex(j => j.id === id);
+    const index = mockItems.findIndex(j => j.id === id);
     if (index >= 0) {
-      mockJobs[index] = { ...mockJobs[index], ...job };
-      return Promise.resolve(mockJobs[index]);
+      mockItems[index] = { ...mockItems[index], ...item };
+      return Promise.resolve(mockItems[index]);
     }
-    throw new Error('Job not found');
+    throw new Error('Item not found');
   }
 
   try {
-    const data = await fetchApi(`/jobs/${id}`, {
+    const data = await fetchApi(`/items/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(job),
+      body: JSON.stringify(item),
     });
-    return data.job;
+    return data.item;
   } catch (error) {
-    console.error('Failed to update job:', error);
+    console.error('Failed to update item:', error);
     throw error;
   }
 };
 
-export const deleteJob = async (id: string): Promise<void> => {
+export const deleteItem = async (id: string): Promise<void> => {
   // Handle mock data
   if (isMockUser()) {
-    const index = mockJobs.findIndex(j => j.id === id);
+    const index = mockItems.findIndex(j => j.id === id);
     if (index >= 0) {
-      mockJobs.splice(index, 1);
+      mockItems.splice(index, 1);
       return Promise.resolve();
     }
-    throw new Error('Job not found');
+    throw new Error('Item not found');
   }
 
   try {
-    await fetchApi(`/jobs/${id}`, {
+    await fetchApi(`/items/${id}`, {
       method: 'DELETE',
     });
   } catch (error) {
-    console.error('Failed to delete job:', error);
+    console.error('Failed to delete item:', error);
     throw error;
   }
 };
