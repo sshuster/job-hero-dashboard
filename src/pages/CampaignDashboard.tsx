@@ -8,6 +8,7 @@ import { ChartCard, StatsPieChart, StatsBarChart } from "@/components/ui/chart-c
 import { CampaignForm } from "@/components/CampaignForm";
 import { CampaignCard } from "@/components/ui/campaign-card";
 import { NavBar } from "@/components/NavBar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { fetchUserCampaigns, fetchCampaignStats, createCampaign, updateCampaign, deleteCampaign } from "@/lib/api";
 import { Campaign, CampaignStats } from "@/lib/types";
