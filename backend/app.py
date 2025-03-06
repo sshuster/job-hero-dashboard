@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
 # Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sellbyowner.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///leadcampaign.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')  # Change in production
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
@@ -28,7 +28,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), default='user')
-    items = db.relationship('Item', backref='owner', lazy=True)
+    campaigns = db.relationship('Campaign', backref='owner', lazy=True)
 
     def to_dict(self):
         return {
@@ -38,35 +38,43 @@ class User(db.Model):
             'role': self.role
         }
 
-class Item(db.Model):
+class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    image_url = db.Column(db.String(200))
-    contact_phone = db.Column(db.String(20))
-    contact_email = db.Column(db.String(100))
+    target_audience = db.Column(db.String(200), nullable=False)
+    platform = db.Column(db.String(50), nullable=False)
+    budget = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.String(10), nullable=False)
+    end_date = db.Column(db.String(10), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='draft')
+    leads_count = db.Column(db.Integer, default=0)
+    responses_count = db.Column(db.Integer, default=0)
+    conversion_rate = db.Column(db.Float)
+    message_template = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    posted_date = db.Column(db.String(10), nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='active')
+    created_date = db.Column(db.String(10), nullable=False)
+    tags = db.Column(db.Text)  # Store as comma-separated values
 
     def to_dict(self):
         return {
             'id': str(self.id),
-            'title': self.title,
+            'name': self.name,
             'description': self.description,
-            'price': self.price,
-            'location': self.location,
-            'category': self.category,
-            'image_url': self.image_url,
-            'contact_phone': self.contact_phone,
-            'contact_email': self.contact_email,
+            'target_audience': self.target_audience,
+            'platform': self.platform,
+            'budget': self.budget,
+            'start_date': self.start_date,
+            'end_date': self.end_date,
+            'status': self.status,
+            'leads_count': self.leads_count,
+            'responses_count': self.responses_count,
+            'conversion_rate': self.conversion_rate,
+            'message_template': self.message_template,
             'owner_id': str(self.owner_id),
             'owner_name': self.owner.name,
-            'posted_date': self.posted_date,
-            'status': self.status
+            'created_date': self.created_date,
+            'tags': self.tags.split(',') if self.tags else []
         }
 
 # Authentication routes
@@ -142,141 +150,174 @@ def get_current_user():
         'user': user.to_dict()
     }), 200
 
-# Item routes
-@app.route('/api/items', methods=['GET'])
-def get_all_items():
-    items = Item.query.filter_by(status='active').all()
+# Campaign routes
+@app.route('/api/campaigns', methods=['GET'])
+def get_all_campaigns():
+    # Only get active and completed campaigns for public view
+    campaigns = Campaign.query.filter(Campaign.status != 'draft').all()
     return jsonify({
-        'items': [item.to_dict() for item in items]
+        'campaigns': [campaign.to_dict() for campaign in campaigns]
     }), 200
 
-@app.route('/api/items/user/<user_id>', methods=['GET'])
-def get_user_items(user_id):
-    items = Item.query.filter_by(owner_id=user_id).all()
+@app.route('/api/campaigns/user/<user_id>', methods=['GET'])
+def get_user_campaigns(user_id):
+    campaigns = Campaign.query.filter_by(owner_id=user_id).all()
     return jsonify({
-        'items': [item.to_dict() for item in items]
+        'campaigns': [campaign.to_dict() for campaign in campaigns]
     }), 200
 
-@app.route('/api/items/stats/<user_id>', methods=['GET'])
-def get_item_stats(user_id):
-    user_items = Item.query.filter_by(owner_id=user_id).all()
+@app.route('/api/campaigns/stats/<user_id>', methods=['GET'])
+def get_campaign_stats(user_id):
+    user_campaigns = Campaign.query.filter_by(owner_id=user_id).all()
     
     # Count by status
-    active = sum(1 for item in user_items if item.status == 'active')
-    sold = sum(1 for item in user_items if item.status == 'sold')
-    draft = sum(1 for item in user_items if item.status == 'draft')
+    active = sum(1 for campaign in user_campaigns if campaign.status == 'active')
+    completed = sum(1 for campaign in user_campaigns if campaign.status == 'completed')
+    draft = sum(1 for campaign in user_campaigns if campaign.status == 'draft')
     
-    # Count by category
-    by_category = {}
-    for item in user_items:
-        by_category[item.category] = by_category.get(item.category, 0) + 1
+    # Count by platform
+    by_platform = {}
+    for campaign in user_campaigns:
+        by_platform[campaign.platform] = by_platform.get(campaign.platform, 0) + 1
     
-    # Calculate total value
-    total_value = sum(item.price for item in user_items if item.status == 'active')
-    sold_value = sum(item.price for item in user_items if item.status == 'sold')
+    # Calculate total budget
+    total_budget = sum(campaign.budget for campaign in user_campaigns if campaign.status in ['active', 'completed'])
+    
+    # Calculate total leads and conversions
+    total_leads = sum(campaign.leads_count for campaign in user_campaigns)
+    total_conversions = sum(campaign.responses_count for campaign in user_campaigns)
+    
+    # Calculate average conversion rate
+    campaigns_with_leads = [c for c in user_campaigns if c.leads_count > 0]
+    avg_conversion_rate = sum(c.conversion_rate or 0 for c in campaigns_with_leads) / len(campaigns_with_leads) if campaigns_with_leads else 0
     
     return jsonify({
         'stats': {
             'active': active,
-            'sold': sold,
+            'completed': completed,
             'draft': draft,
-            'byCategory': by_category,
-            'totalValue': total_value,
-            'soldValue': sold_value
+            'byPlatform': by_platform,
+            'totalBudget': total_budget,
+            'totalLeads': total_leads,
+            'totalConversions': total_conversions,
+            'averageConversionRate': avg_conversion_rate
         }
     }), 200
 
-@app.route('/api/items', methods=['POST'])
+@app.route('/api/campaigns', methods=['POST'])
 @jwt_required()
-def create_item():
+def create_campaign():
     user_id = get_jwt_identity()
     data = request.get_json()
     
     today = datetime.now().strftime('%Y-%m-%d')
     
-    new_item = Item(
-        title=data['title'],
+    # Calculate conversion rate
+    conversion_rate = None
+    if data.get('leads_count', 0) > 0:
+        conversion_rate = (data.get('responses_count', 0) / data.get('leads_count', 0)) * 100
+    
+    # Process tags
+    tags_str = ','.join(data.get('tags', [])) if data.get('tags') else ''
+    
+    new_campaign = Campaign(
+        name=data['name'],
         description=data['description'],
-        price=data['price'],
-        location=data['location'],
-        category=data['category'],
-        image_url=data.get('image_url', ''),
-        contact_phone=data.get('contact_phone', ''),
-        contact_email=data.get('contact_email', ''),
+        target_audience=data['target_audience'],
+        platform=data['platform'],
+        budget=data['budget'],
+        start_date=data['start_date'],
+        end_date=data['end_date'],
+        status=data['status'],
+        leads_count=data.get('leads_count', 0),
+        responses_count=data.get('responses_count', 0),
+        conversion_rate=conversion_rate,
+        message_template=data.get('message_template', ''),
         owner_id=user_id,
-        posted_date=today,
-        status=data['status']
+        created_date=today,
+        tags=tags_str
     )
     
-    db.session.add(new_item)
+    db.session.add(new_campaign)
     db.session.commit()
     
     return jsonify({
-        'message': 'Item created successfully',
-        'item': new_item.to_dict()
+        'message': 'Campaign created successfully',
+        'campaign': new_campaign.to_dict()
     }), 201
 
-@app.route('/api/items/<item_id>', methods=['PUT'])
+@app.route('/api/campaigns/<campaign_id>', methods=['PUT'])
 @jwt_required()
-def update_item(item_id):
+def update_campaign(campaign_id):
     user_id = get_jwt_identity()
-    item = Item.query.get(item_id)
+    campaign = Campaign.query.get(campaign_id)
     
-    if not item:
-        return jsonify({'message': 'Item not found'}), 404
+    if not campaign:
+        return jsonify({'message': 'Campaign not found'}), 404
         
-    # Ensure user owns the item or is admin
+    # Ensure user owns the campaign or is admin
     user = User.query.get(user_id)
-    if str(item.owner_id) != str(user_id) and user.role != 'admin':
+    if str(campaign.owner_id) != str(user_id) and user.role != 'admin':
         return jsonify({'message': 'Unauthorized'}), 403
         
     data = request.get_json()
     
-    if 'title' in data:
-        item.title = data['title']
+    # Update fields if provided
+    if 'name' in data:
+        campaign.name = data['name']
     if 'description' in data:
-        item.description = data['description']
-    if 'price' in data:
-        item.price = data['price']
-    if 'location' in data:
-        item.location = data['location']
-    if 'category' in data:
-        item.category = data['category']
-    if 'image_url' in data:
-        item.image_url = data['image_url']
-    if 'contact_phone' in data:
-        item.contact_phone = data['contact_phone']
-    if 'contact_email' in data:
-        item.contact_email = data['contact_email']
+        campaign.description = data['description']
+    if 'target_audience' in data:
+        campaign.target_audience = data['target_audience']
+    if 'platform' in data:
+        campaign.platform = data['platform']
+    if 'budget' in data:
+        campaign.budget = data['budget']
+    if 'start_date' in data:
+        campaign.start_date = data['start_date']
+    if 'end_date' in data:
+        campaign.end_date = data['end_date']
     if 'status' in data:
-        item.status = data['status']
+        campaign.status = data['status']
+    if 'leads_count' in data:
+        campaign.leads_count = data['leads_count']
+    if 'responses_count' in data:
+        campaign.responses_count = data['responses_count']
+    if 'message_template' in data:
+        campaign.message_template = data['message_template']
+    if 'tags' in data:
+        campaign.tags = ','.join(data['tags'])
+    
+    # Recalculate conversion rate
+    if campaign.leads_count > 0:
+        campaign.conversion_rate = (campaign.responses_count / campaign.leads_count) * 100
     
     db.session.commit()
     
     return jsonify({
-        'message': 'Item updated successfully',
-        'item': item.to_dict()
+        'message': 'Campaign updated successfully',
+        'campaign': campaign.to_dict()
     }), 200
 
-@app.route('/api/items/<item_id>', methods=['DELETE'])
+@app.route('/api/campaigns/<campaign_id>', methods=['DELETE'])
 @jwt_required()
-def delete_item(item_id):
+def delete_campaign(campaign_id):
     user_id = get_jwt_identity()
-    item = Item.query.get(item_id)
+    campaign = Campaign.query.get(campaign_id)
     
-    if not item:
-        return jsonify({'message': 'Item not found'}), 404
+    if not campaign:
+        return jsonify({'message': 'Campaign not found'}), 404
         
-    # Ensure user owns the item or is admin
+    # Ensure user owns the campaign or is admin
     user = User.query.get(user_id)
-    if str(item.owner_id) != str(user_id) and user.role != 'admin':
+    if str(campaign.owner_id) != str(user_id) and user.role != 'admin':
         return jsonify({'message': 'Unauthorized'}), 403
         
-    db.session.delete(item)
+    db.session.delete(campaign)
     db.session.commit()
     
     return jsonify({
-        'message': 'Item deleted successfully'
+        'message': 'Campaign deleted successfully'
     }), 200
 
 # Initialize the database

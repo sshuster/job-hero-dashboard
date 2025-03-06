@@ -1,6 +1,6 @@
-
-import { User, Item, ItemStats } from './types';
+import { User, Item, ItemStats, Campaign, CampaignStats } from './types';
 import { mockItems, mockItemStats } from './mockData';
+import { mockCampaigns, mockCampaignStats } from './mockCampaignData';
 
 // Base URL for API requests
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -103,6 +103,121 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
   } catch (error) {
     console.error('Failed to fetch current user:', error);
     return null;
+  }
+};
+
+// Campaign APIs
+export const fetchAllCampaigns = async (): Promise<Campaign[]> => {
+  // Return mock data if using mock user
+  if (isMockUser()) {
+    return Promise.resolve([...mockCampaigns]);
+  }
+
+  try {
+    const data = await fetchApi('/campaigns');
+    return data.campaigns;
+  } catch (error) {
+    console.error('Failed to fetch campaigns:', error);
+    throw error;
+  }
+};
+
+export const fetchUserCampaigns = async (userId: string): Promise<Campaign[]> => {
+  // Return mock data if using mock user
+  if (isMockUser()) {
+    return Promise.resolve(mockCampaigns.filter(campaign => campaign.owner_id === userId));
+  }
+
+  try {
+    const data = await fetchApi(`/campaigns/user/${userId}`);
+    return data.campaigns;
+  } catch (error) {
+    console.error('Failed to fetch user campaigns:', error);
+    throw error;
+  }
+};
+
+export const fetchCampaignStats = async (userId: string): Promise<CampaignStats> => {
+  // Return mock data if using mock user
+  if (isMockUser()) {
+    return Promise.resolve({...mockCampaignStats});
+  }
+
+  try {
+    const data = await fetchApi(`/campaigns/stats/${userId}`);
+    return data.stats;
+  } catch (error) {
+    console.error('Failed to fetch campaign stats:', error);
+    throw error;
+  }
+};
+
+export const createCampaign = async (campaign: Omit<Campaign, 'id' | 'created_date' | 'owner_name'>): Promise<Campaign> => {
+  // Handle mock data
+  if (isMockUser()) {
+    const newCampaign: Campaign = {
+      ...campaign,
+      id: `mock-${Date.now()}`,
+      created_date: new Date().toISOString().split('T')[0],
+      owner_name: 'Administrator'
+    };
+    mockCampaigns.push(newCampaign);
+    return Promise.resolve(newCampaign);
+  }
+
+  try {
+    const data = await fetchApi('/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(campaign),
+    });
+    return data.campaign;
+  } catch (error) {
+    console.error('Failed to create campaign:', error);
+    throw error;
+  }
+};
+
+export const updateCampaign = async (id: string, campaign: Partial<Campaign>): Promise<Campaign> => {
+  // Handle mock data
+  if (isMockUser()) {
+    const index = mockCampaigns.findIndex(c => c.id === id);
+    if (index >= 0) {
+      mockCampaigns[index] = { ...mockCampaigns[index], ...campaign };
+      return Promise.resolve(mockCampaigns[index]);
+    }
+    throw new Error('Campaign not found');
+  }
+
+  try {
+    const data = await fetchApi(`/campaigns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(campaign),
+    });
+    return data.campaign;
+  } catch (error) {
+    console.error('Failed to update campaign:', error);
+    throw error;
+  }
+};
+
+export const deleteCampaign = async (id: string): Promise<void> => {
+  // Handle mock data
+  if (isMockUser()) {
+    const index = mockCampaigns.findIndex(c => c.id === id);
+    if (index >= 0) {
+      mockCampaigns.splice(index, 1);
+      return Promise.resolve();
+    }
+    throw new Error('Campaign not found');
+  }
+
+  try {
+    await fetchApi(`/campaigns/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Failed to delete campaign:', error);
+    throw error;
   }
 };
 

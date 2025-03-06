@@ -45,3 +45,34 @@ export interface Job {
   postedBy: string;
   postedDate?: string;
 }
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  target_audience: string;
+  platform: string;
+  budget: number;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'completed' | 'draft';
+  leads_count: number;
+  responses_count: number;
+  conversion_rate?: number;
+  message_template?: string;
+  owner_id: string;
+  owner_name?: string;
+  created_date: string;
+  tags?: string[];
+}
+
+export interface CampaignStats {
+  active: number;
+  completed: number;
+  draft: number;
+  byPlatform: Record<string, number>;
+  totalBudget: number;
+  totalLeads: number;
+  totalConversions: number;
+  averageConversionRate: number;
+}

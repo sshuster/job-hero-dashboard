@@ -1,23 +1,24 @@
 
-from app import db, User, Item
+from app import db, User, Campaign
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import random
 
-# Sample categories
-categories = ['Electronics', 'Furniture', 'Vehicles', 'Clothing', 'Real Estate', 'Services', 'Collectibles', 'Other']
-
-# Sample locations
-locations = ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ', 'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA']
+# Sample platforms
+platforms = ['LinkedIn', 'Email', 'Twitter', 'Facebook', 'Instagram', 'Phone', 'In Person', 'Other']
 
 # Sample statuses
-statuses = ['active', 'sold', 'draft']
-status_weights = [0.7, 0.2, 0.1]  # 70% active, 20% sold, 10% draft
+statuses = ['active', 'completed', 'draft']
+status_weights = [0.6, 0.3, 0.1]  # 60% active, 30% completed, 10% draft
+
+# Sample tags
+tags = ['B2B', 'B2C', 'Tech', 'Finance', 'Healthcare', 'Education', 'Marketing', 'Sales', 'Product Launch', 
+        'Lead Generation', 'Conversion', 'Cold Outreach', 'Warm Leads', 'Event', 'Webinar', 'Partnership']
 
 def create_mock_data():
     with db.app.app_context():
         # Clear existing data
-        db.session.query(Item).delete()
+        db.session.query(Campaign).delete()
         db.session.query(User).delete()
         db.session.commit()
 
@@ -46,112 +47,163 @@ def create_mock_data():
         db.session.commit()
         print(f"Created {len(users) + 1} users")
 
-        # Create items for each user
-        print("Creating mock items...")
-        items_count = 0
+        # Create campaigns for each user
+        print("Creating mock campaigns...")
+        campaigns_count = 0
         
-        # Items for admin
-        admin_items = [
+        # Campaigns for admin
+        admin_campaigns = [
             {
-                'title': 'iPhone 13 Pro - Like New',
-                'description': 'Selling my iPhone 13 Pro, only used for 3 months. Comes with original box and accessories.',
-                'price': 899.99,
-                'category': 'Electronics',
-                'location': 'New York, NY',
-                'image_url': 'https://example.com/iphone.jpg',
-                'contact_phone': '555-123-4567',
-                'contact_email': 'admin@example.com',
-                'status': 'active'
+                'name': 'LinkedIn Sales Outreach',
+                'description': 'Contacting decision makers in the tech industry for our SaaS product.',
+                'target_audience': 'CTOs and VPs of Engineering at tech companies',
+                'platform': 'LinkedIn',
+                'budget': 5000,
+                'start_date': '2023-10-01',
+                'end_date': '2023-12-31',
+                'status': 'active',
+                'leads_count': 250,
+                'responses_count': 48,
+                'message_template': 'Hi {{name}}, I noticed your company is expanding its tech division. I'd love to show you how our product can help with scaling challenges.',
+                'tags': 'Tech,SaaS,B2B'
             },
             {
-                'title': 'Leather Sofa - Excellent Condition',
-                'description': 'Beautiful brown leather sofa, 3 years old but in excellent condition. No scratches or tears.',
-                'price': 650.00,
-                'category': 'Furniture',
-                'location': 'Los Angeles, CA',
-                'image_url': 'https://example.com/sofa.jpg',
-                'contact_phone': '555-123-4567',
-                'contact_email': 'admin@example.com',
-                'status': 'active'
+                'name': 'Email Marketing Campaign',
+                'description': 'Targeted email campaign to previous customers for our new product launch.',
+                'target_audience': 'Previous customers who purchased in the last 6 months',
+                'platform': 'Email',
+                'budget': 2500,
+                'start_date': '2023-11-01',
+                'end_date': '2023-11-30',
+                'status': 'active',
+                'leads_count': 1200,
+                'responses_count': 156,
+                'message_template': 'Dear {{name}}, As a valued customer, we wanted to give you early access to our newest product launch...',
+                'tags': 'Email,Existing Customers,Product Launch'
             },
             {
-                'title': '2018 Honda Civic - Low Mileage',
-                'description': '2018 Honda Civic with only 25,000 miles. One owner, regular maintenance, all service records available.',
-                'price': 18500.00,
-                'category': 'Vehicles',
-                'location': 'Chicago, IL',
-                'image_url': 'https://example.com/civic.jpg',
-                'contact_phone': '555-123-4567',
-                'contact_email': 'admin@example.com',
-                'status': 'sold'
+                'name': 'Twitter Ad Campaign',
+                'description': 'Targeted ads on Twitter for brand awareness in the finance sector.',
+                'target_audience': 'Finance professionals and enthusiasts',
+                'platform': 'Twitter',
+                'budget': 7500,
+                'start_date': '2023-08-15',
+                'end_date': '2023-10-15',
+                'status': 'completed',
+                'leads_count': 1850,
+                'responses_count': 215,
+                'message_template': '',
+                'tags': 'Social Media,Finance,Ads'
             },
             {
-                'title': 'Vintage Record Collection',
-                'description': 'Collection of 200+ vinyl records from the 60s and 70s, including rare first pressings.',
-                'price': 1200.00,
-                'category': 'Collectibles',
-                'location': 'San Francisco, CA',
-                'image_url': 'https://example.com/records.jpg',
-                'contact_phone': '555-123-4567',
-                'contact_email': 'admin@example.com',
-                'status': 'draft'
+                'name': 'Trade Show Contacts',
+                'description': 'Follow-up campaign for contacts collected at the industry trade show.',
+                'target_audience': 'Trade show attendees who visited our booth',
+                'platform': 'Phone',
+                'budget': 3200,
+                'start_date': '2023-12-01',
+                'end_date': '2024-01-31',
+                'status': 'draft',
+                'leads_count': 0,
+                'responses_count': 0,
+                'message_template': 'Hi {{name}}, It was great meeting you at the trade show. I wanted to follow up on our conversation about...',
+                'tags': 'Trade Show,Follow-up,Direct'
             }
         ]
         
-        for item_data in admin_items:
-            item = Item(
-                title=item_data['title'],
-                description=item_data['description'],
-                price=item_data['price'],
-                location=item_data['location'],
-                category=item_data['category'],
-                image_url=item_data['image_url'],
-                contact_phone=item_data['contact_phone'],
-                contact_email=item_data['contact_email'],
+        for campaign_data in admin_campaigns:
+            # Calculate conversion rate
+            conversion_rate = None
+            if campaign_data['leads_count'] > 0:
+                conversion_rate = (campaign_data['responses_count'] / campaign_data['leads_count']) * 100
+                
+            campaign = Campaign(
+                name=campaign_data['name'],
+                description=campaign_data['description'],
+                target_audience=campaign_data['target_audience'],
+                platform=campaign_data['platform'],
+                budget=campaign_data['budget'],
+                start_date=campaign_data['start_date'],
+                end_date=campaign_data['end_date'],
+                status=campaign_data['status'],
+                leads_count=campaign_data['leads_count'],
+                responses_count=campaign_data['responses_count'],
+                conversion_rate=conversion_rate,
+                message_template=campaign_data['message_template'],
                 owner_id=admin.id,
-                posted_date=(datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d'),
-                status=item_data['status']
+                created_date=(datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d'),
+                tags=campaign_data['tags']
             )
-            db.session.add(item)
-            items_count += 1
+            db.session.add(campaign)
+            campaigns_count += 1
 
-        # Create random items for each regular user
+        # Create random campaigns for each regular user
         for user in users:
-            # Each user gets 3-7 items
-            num_items = random.randint(3, 7)
-            for _ in range(num_items):
-                # Generate random posting date within the last 60 days
-                posted_date = (datetime.now() - timedelta(days=random.randint(1, 60))).strftime('%Y-%m-%d')
+            # Each user gets 2-5 campaigns
+            num_campaigns = random.randint(2, 5)
+            for _ in range(num_campaigns):
+                # Generate random creation date within the last 90 days
+                created_date = (datetime.now() - timedelta(days=random.randint(1, 90))).strftime('%Y-%m-%d')
                 
-                # Random item data
-                title_prefixes = ["New", "Used", "Like New", "Vintage", "Rare", "Custom"]
-                title_items = ["Table", "Laptop", "Camera", "Bicycle", "Jacket", "Guitar", "Watch", "Book Collection", "Shoes", "Painting"]
-                title = f"{random.choice(title_prefixes)} {random.choice(title_items)}"
+                # Generate random start and end dates
+                start_date = (datetime.now() - timedelta(days=random.randint(0, 60))).strftime('%Y-%m-%d')
+                end_date = (datetime.now() + timedelta(days=random.randint(30, 180))).strftime('%Y-%m-%d')
                 
-                price = round(random.uniform(10, 2000), 2)
-                category = random.choice(categories)
-                location = random.choice(locations)
+                # Random campaign data
+                platform = random.choice(platforms)
                 status = random.choices(statuses, weights=status_weights)[0]
                 
-                item = Item(
-                    title=title,
-                    description=f"This is a detailed description for {title.lower()}. The item is in good condition and ready for a new owner.",
-                    price=price,
-                    location=location,
-                    category=category,
-                    image_url=f"https://example.com/image{random.randint(1, 100)}.jpg",
-                    contact_phone=f"555-{random.randint(100, 999)}-{random.randint(1000, 9999)}",
-                    contact_email=user.email,
+                # Random name based on platform
+                prefixes = ["Q4", "Spring", "Summer", "Fall", "Winter", "2023", "2024", "Global", "Regional", "Industry"]
+                suffixes = ["Outreach", "Campaign", "Initiative", "Program", "Drive", "Push", "Strategy"]
+                name = f"{random.choice(prefixes)} {platform} {random.choice(suffixes)}"
+                
+                # Random budget between $1,000 and $20,000
+                budget = round(random.uniform(1000, 20000), 2)
+                
+                # Random leads and conversions
+                leads_count = random.randint(0, 2000) if status != 'draft' else 0
+                response_rate = random.uniform(0.05, 0.3)  # 5% to 30% response rate
+                responses_count = int(leads_count * response_rate) if leads_count > 0 else 0
+                
+                # Calculate conversion rate
+                conversion_rate = (responses_count / leads_count) * 100 if leads_count > 0 else None
+                
+                # Random tags (2-4 tags)
+                selected_tags = random.sample(tags, random.randint(2, 4))
+                tags_str = ','.join(selected_tags)
+                
+                # Message template examples
+                message_templates = [
+                    "Hi {{name}}, I saw your profile and thought our {{product}} might be a good fit for your needs at {{company}}.",
+                    "Dear {{name}}, I'm reaching out because I noticed you're in the {{industry}} industry and our solution addresses the common pain points.",
+                    "Hello {{name}}, We recently helped a company similar to {{company}} achieve great results with our approach to {{problem}}.",
+                    ""  # Empty template option
+                ]
+                
+                campaign = Campaign(
+                    name=name,
+                    description=f"This is a {platform.lower()} campaign targeting potential customers in our database with personalized outreach.",
+                    target_audience=f"Professionals in {random.choice(['tech', 'finance', 'healthcare', 'education', 'retail', 'manufacturing'])} industry",
+                    platform=platform,
+                    budget=budget,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=status,
+                    leads_count=leads_count,
+                    responses_count=responses_count,
+                    conversion_rate=conversion_rate,
+                    message_template=random.choice(message_templates) if random.random() > 0.3 else "",
                     owner_id=user.id,
-                    posted_date=posted_date,
-                    status=status
+                    created_date=created_date,
+                    tags=tags_str
                 )
                 
-                db.session.add(item)
-                items_count += 1
+                db.session.add(campaign)
+                campaigns_count += 1
         
         db.session.commit()
-        print(f"Created {items_count} items")
+        print(f"Created {campaigns_count} campaigns")
         print("Mock data creation completed successfully!")
 
 if __name__ == '__main__':
