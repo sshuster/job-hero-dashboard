@@ -11,7 +11,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated && !loading) {
-      navigate("/dashboard");
+      navigate("/campaigns");
     }
   }, [isAuthenticated, loading, navigate]);
 
