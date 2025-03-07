@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export function NavBar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
@@ -46,9 +44,7 @@ export function NavBar() {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Items Marketplace", href: "/items" },
     { name: "Campaign Dashboard", href: "/campaigns", auth: true },
-    { name: "Dashboard", href: "/dashboard", auth: true },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -76,7 +72,6 @@ export function NavBar() {
             LeadGen Pro
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-4">
             {filteredLinks.map((link) => (
               <Link
@@ -119,7 +114,7 @@ export function NavBar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard">Dashboard</Link>
+                  <Link to="/campaigns">Campaign Dashboard</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
@@ -139,7 +134,6 @@ export function NavBar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <Button
           variant="ghost"
           size="icon"
@@ -154,7 +148,6 @@ export function NavBar() {
         </Button>
       </div>
 
-      {/* Mobile Menu */}
       <div
         className={cn(
           "fixed inset-x-0 top-[72px] bg-background border-b p-4 md:hidden transition-all duration-300 ease-in-out transform",
